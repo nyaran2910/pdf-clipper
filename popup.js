@@ -3,7 +3,7 @@
 
 const urlDisplay  = document.getElementById('urlDisplay');
 const startInput  = document.getElementById('startPage');
-const endInput    = document.getElementById('endPage');
+const countInput  = document.getElementById('count');
 const pageCountEl = document.getElementById('pageCount').querySelector('span');
 const selectionEl = document.getElementById('selectionInfo').querySelector('span');
 const clipBtn     = document.getElementById('clipBtn');
@@ -97,19 +97,20 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdf.worker.min.js';
 
     pageCountEl.textContent = totalPages;
     startInput.max = totalPages;
-    endInput.max   = totalPages;
+    countInput.max   = totalPages;
 
     // 現在ページ検出
     const currentPage = await detectCurrentPage(tab, totalPages);
     startInput.value = currentPage;
-    endInput.value   = currentPage;
+    countInput.value = currentPage;
 
     updateSelectionInfo();
     clipBtn.disabled = false;
     hideOverlay();
 
-    // ★ フォーカスをボタンに → Enterで即実行
-    clipBtn.focus();
+    // ★ フォーカスを開始ページ選択ボックスに
+    startInput.focus();
+    startInput.select();
 
   } catch (e) {
     hideOverlay();
@@ -182,25 +183,25 @@ async function detectCurrentPage(tab, total) {
 // EVENTS
 // ============================================================
 startInput.addEventListener('input', updateSelectionInfo);
-endInput.addEventListener('input', updateSelectionInfo);
+countInput.addEventListener('input', updateSelectionInfo);
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !clipBtn.disabled && document.activeElement !== startInput && document.activeElement !== endInput) {
+  if (e.key === 'Enter' && !clipBtn.disabled && document.activeElement !== startInput && document.activeElement !== countInput) {
     clipBtn.click();
   }
 });
 
 // inputでEnterを押したときも次のフィールドに移動 or 実行
 startInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { endInput.focus(); endInput.select(); }
+  if (e.key === 'Enter') { countInput.focus(); countInput.select(); }
 });
-endInput.addEventListener('keydown', (e) => {
+countInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { clipBtn.focus(); clipBtn.click(); }
 });
 
 clipBtn.addEventListener('click', async () => {
   const start = parseInt(startInput.value);
-  const end   = parseInt(endInput.value);
+  const end   = start + parseInt(countInput.value) - 1;
   if (!validate(start, end)) return;
 
   setLoading(true);
@@ -293,9 +294,9 @@ async function renderPagesToPng(startPage, endPage, onProgress) {
 // ============================================================
 function updateSelectionInfo() {
   const s = parseInt(startInput.value) || 0;
-  const e = parseInt(endInput.value) || 0;
-  if (s >= 1 && e >= s && e <= totalPages) {
-    selectionEl.textContent = `${e - s + 1}ページ`;
+  const e = parseInt(countInput.value) || 0;
+  if (s >= 1 && e >= 1 && s + e - 1 <= totalPages) {
+    selectionEl.textContent = "有効";
   } else {
     selectionEl.textContent = '無効';
   }
